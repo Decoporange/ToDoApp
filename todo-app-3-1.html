@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Planner">
+<meta name="theme-color" content="#0D1520">
+<title>Planner</title>
+<style>
+[data-theme="dark"]{
+  --bg:#0D1520;--sf:#151F2E;--sf2:#1C2A3E;--sf3:#243350;
+  --bd:#2A3D58;--pr:#4A9EDB;--pr2:#1A4A7A;--ac:#63C5DA;
+  --tx:#D6EAF8;--tx2:#6B8CAE;--tx3:#3A5070;
+  --gr:#52C8A0;--gr2:#0E3028;--ye:#F0C040;--ye2:#3A2E08;
+  --re:#E07070;--re2:#3A1010;--sh:0 4px 20px rgba(0,0,0,.45);
+}
+[data-theme="light"]{
+  --bg:#EBF4FB;--sf:#FFF;--sf2:#F0F7FC;--sf3:#DFF0F8;
+  --bd:#B8D8EE;--pr:#2B7DC0;--pr2:#CBE2F4;--ac:#1AA3BE;
+  --tx:#0D2D4A;--tx2:#4A789C;--tx3:#8AAEC8;
+  --gr:#1E9C78;--gr2:#D0F2E8;--ye:#C28A00;--ye2:#FDF3CC;
+  --re:#C0444A;--re2:#FAE0E0;--sh:0 2px 12px rgba(43,125,192,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;scroll-behavior:smooth}
+body{font-family:'Helvetica Neue',Arial,'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100%;max-width:540px;margin:0 auto;padding-bottom:calc(70px + env(safe-area-inset-bottom));transition:background .2s,color .2s}
+button{font-family:inherit;cursor:pointer}
+input,textarea,select{font-family:inherit}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:300;background:var(--sf);border-bottom:1px solid var(--bd);padding-top:env(safe-area-inset-top);box-shadow:var(--sh);transition:background .2s}
+.nav-row1{display:flex;align-items:stretch}
+.nav-tabs-main{display:flex;flex:1}
+.nav-tab-main{flex:1;padding:12px 4px 10px;border:none;background:none;color:var(--tx3);font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;border-bottom:2.5px solid transparent;transition:all .18s}
+.nav-tab-main.active{color:var(--pr);border-bottom-color:var(--pr)}
+.nav-end{display:flex;align-items:center;padding:0 8px;gap:6px}
+.icon-btn{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.icon-btn:hover{border-color:var(--pr);color:var(--pr)}
+svg.ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* SUB TABS */
+.sub-nav{background:var(--sf);border-bottom:1px solid var(--bd);display:none;overflow:hidden}
+.sub-nav.visible{display:block}
+.sub-nav-inner{display:flex;align-items:center;overflow-x:auto;scrollbar-width:none;padding:0 4px;gap:2px}
+.sub-nav-inner::-webkit-scrollbar{display:none}
+.sub-tab{flex-shrink:0;padding:9px 10px 8px;border:none;background:none;color:var(--tx3);font-size:12px;font-weight:700;border-bottom:2.5px solid transparent;transition:all .18s;white-space:nowrap;display:flex;align-items:center;gap:3px}
+.sub-tab.active{color:var(--pr);border-bottom-color:var(--pr)}
+.sub-tab-badge{display:inline-block;background:var(--sf3);color:var(--tx3);font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px}
+.sub-tab.active .sub-tab-badge{background:var(--pr2);color:var(--pr)}
+/* Overdue alert on sub-tab */
+.sub-tab.has-overdue{color:var(--re)!important}
+.sub-tab.has-overdue .sub-tab-badge{background:var(--re2)!important;color:var(--re)!important}
+.sub-tab.has-overdue{border-bottom-color:var(--re)!important}
+.overdue-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--re);margin-left:1px;flex-shrink:0;animation:odotBlink 1.4s infinite}
+@keyframes odotBlink{0%,100%{opacity:1}50%{opacity:.25}}
+.sub-nav-add{flex-shrink:0;padding:7px 10px;border:none;background:none;color:var(--tx2);font-size:12px;font-weight:700;white-space:nowrap;transition:color .15s}
+.sub-nav-add:hover{color:var(--pr)}
+.sub-tab-menu-btn{background:none;border:none;color:var(--tx3);font-size:15px;line-height:1;padding:2px 3px;border-radius:4px;transition:all .15s;display:inline-flex;align-items:center}
+.sub-tab-menu-btn:hover{color:var(--tx)}
+
+/* CTX MENU */
+.ctx-menu{position:fixed;z-index:600;background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:4px;box-shadow:0 8px 28px rgba(0,0,0,.45);min-width:148px;animation:menuPop .12s ease}
+@keyframes menuPop{from{opacity:0;transform:scale(.92)}}
+.ctx-item{display:block;width:100%;text-align:left;padding:9px 12px;border:none;background:none;font-size:13px;font-weight:600;color:var(--tx);border-radius:7px;transition:background .12s}
+.ctx-item:hover{background:var(--sf2)}
+.ctx-item.danger{color:var(--re)}
+.ctx-item.danger:hover{background:var(--re2)}
+
+/* PAGES */
+.pages-outer{overflow:hidden;position:relative}
+.pages-track{display:flex;transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform}
+.page-slot{flex-shrink:0;width:100%;padding:14px 13px;min-height:60vh}
+
+/* STATS */
+.stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:9px 7px;text-align:center;box-shadow:var(--sh)}
+.stat-n{font-size:20px;font-weight:900;color:var(--pr)}
+.stat-l{font-size:10px;color:var(--tx3);margin-top:2px}
+
+/* TODO ITEM */
+.todo-item{background:var(--sf2);border:1px solid var(--bd);border-left:3px solid transparent;border-radius:9px;padding:10px 10px 9px;display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;transition:opacity .2s,background .2s,transform .15s,box-shadow .2s;box-shadow:var(--sh);position:relative}
+.todo-item.p-high{border-left-color:var(--re)}
+.todo-item.p-mid{border-left-color:var(--ye)}
+.todo-item.p-low{border-left-color:var(--gr)}
+.todo-item.done{opacity:.42}
+.todo-item.child{margin-left:24px;border-left-style:dashed}
+.todo-item.drag-over{background:var(--pr2)!important;border-color:var(--pr)}
+.todo-item.dragging{opacity:.35;transform:scale(.98)}
+
+/* Complete animation */
+@keyframes completePop{
+  0%{transform:scale(1);background:var(--sf2)}
+  20%{transform:scale(1.04);background:rgba(82,200,160,.2);border-color:var(--gr);box-shadow:0 0 0 4px rgba(82,200,160,.12)}
+  55%{transform:scale(.97);opacity:.65}
+  100%{transform:scale(1);opacity:.42}
+}
+.todo-item.completing{animation:completePop .45s ease forwards;pointer-events:none}
+
+/* Overdue */
+.todo-item.deadline-passed{background:rgba(224,112,112,.12)!important;border-color:var(--re)!important;box-shadow:0 0 0 2px rgba(224,112,112,.25),var(--sh)!important;animation:deadlinePulse 2s infinite}
+@keyframes deadlinePulse{0%,100%{box-shadow:0 0 0 2px rgba(224,112,112,.25),var(--sh)}50%{box-shadow:0 0 0 5px rgba(224,112,112,.08),var(--sh)}}
+
+.drag-handle{display:flex;align-items:center;justify-content:center;width:16px;flex-shrink:0;cursor:grab;color:var(--tx3);padding-top:2px;touch-action:none}
+.drag-handle:active{cursor:grabbing}
+.cb{width:19px;height:19px;border-radius:5px;border:2px solid var(--bd);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;margin-top:1px;background:transparent}
+.cb.checked{background:var(--pr);border-color:var(--pr)}
+.cb.checked::after{content:'';width:9px;height:5px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(-45deg) translateY(-1px)}
+.todo-body{flex:1;min-width:0}
+.todo-title{font-size:14px;font-weight:700;line-height:1.4;color:var(--tx);word-break:break-word}
+.todo-item.done .todo-title{text-decoration:line-through;color:var(--tx3)}
+.todo-desc{font-size:12px;color:var(--tx2);margin-top:3px;line-height:1.5;word-break:break-word}
+.todo-meta{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;align-items:center}
+.tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px}
+.tag.pri-high{background:var(--re2);color:var(--re)}
+.tag.pri-mid{background:var(--ye2);color:var(--ye)}
+.tag.pri-low{background:var(--gr2);color:var(--gr)}
+.tag.dt{background:var(--sf3);color:var(--tx2)}
+.tag.rep{background:var(--pr2);color:var(--pr)}
+.tag.dur{background:var(--pr2);color:var(--ac)}
+.tag.overdue{background:var(--re2);color:var(--re)}
+.item-actions{display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+.item-btn{background:none;border:none;color:var(--tx3);width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.item-btn:hover{background:var(--sf3);color:var(--tx)}
+.item-btn.del:hover{background:var(--re2);color:var(--re)}
+
+/* DONE SECTION */
+.done-section{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid var(--bd);background:var(--sf)}
+.done-section-header{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none;transition:background .15s}
+.done-section-header:hover{background:var(--sf2)}
+.done-section-label{font-size:12px;font-weight:700;color:var(--tx3);flex:1}
+.done-section-chevron{color:var(--tx3);transition:transform .22s;display:flex;align-items:center}
+.done-section.open .done-section-chevron{transform:rotate(0deg)}
+.done-section.closed .done-section-chevron{transform:rotate(-90deg)}
+.done-section-body{padding:8px 8px 10px}
+.done-section.closed .done-section-body{display:none}
+
+/* FAB */
+.fab{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));right:18px;width:50px;height:50px;border-radius:14px;background:var(--pr);color:#fff;border:none;font-size:24px;box-shadow:0 6px 22px rgba(74,158,219,.4);display:flex;align-items:center;justify-content:center;transition:transform .15s;z-index:150}
+.fab:hover{transform:scale(1.07)}
+.fab:active{transform:scale(.94)}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex;animation:fadeBg .18s}
+@keyframes fadeBg{from{opacity:0}}
+.modal{background:var(--sf);border-radius:20px 20px 0 0;border:1px solid var(--bd);border-bottom:none;padding:18px 16px calc(28px + env(safe-area-inset-bottom));width:100%;max-width:540px;animation:slideUp .24s cubic-bezier(.34,1.26,.64,1);max-height:92vh;overflow-y:auto;transition:background .2s}
+@keyframes slideUp{from{transform:translateY(50px);opacity:0}}
+.modal-title{font-size:15px;font-weight:800;color:var(--pr);text-align:center;margin-bottom:15px}
+.field{margin-bottom:11px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+textarea,input[type=text],input[type=number],input[type=date],select{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:10px 11px;font-size:14px;color:var(--tx);background:var(--sf2);outline:none;transition:border-color .2s,background .2s}
+textarea:focus,input:focus,select:focus{border-color:var(--pr)}
+textarea{resize:none}
+select option{background:var(--sf2)}
+.row2{display:flex;gap:8px}
+.row2 .field{flex:1}
+.pri-row{display:flex;gap:6px}
+.pri-btn{flex:1;padding:8px 4px;border-radius:8px;border:1.5px solid var(--bd);background:var(--sf2);font-size:12px;font-weight:700;color:var(--tx2);transition:all .15s;text-align:center}
+.pri-btn.sel-high{background:var(--re2);border-color:var(--re);color:var(--re)}
+.pri-btn.sel-mid{background:var(--ye2);border-color:var(--ye);color:var(--ye)}
+.pri-btn.sel-low{background:var(--gr2);border-color:var(--gr);color:var(--gr)}
+.modal-actions{display:flex;gap:8px;margin-top:14px}
+.btn-cancel{flex:1;padding:12px;border-radius:8px;border:1.5px solid var(--bd);background:transparent;color:var(--tx2);font-size:14px;font-weight:700}
+.btn-ok{flex:2;padding:12px;border-radius:8px;border:none;background:var(--pr);color:#fff;font-size:14px;font-weight:700;transition:opacity .15s}
+.btn-ok:hover{opacity:.88}
+.btn-delete{padding:12px;border-radius:8px;border:1.5px solid var(--re);background:transparent;color:var(--re);font-size:14px;font-weight:700;transition:background .15s}
+.btn-delete:hover{background:var(--re2)}
+
+/* DT PICKER */
+.dt-display-btn{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:10px 11px;font-size:14px;color:var(--tx);background:var(--sf2);text-align:left;display:flex;align-items:center;gap:8px;transition:border-color .2s}
+.dt-display-btn:hover,.dt-display-btn:focus{border-color:var(--pr);outline:none}
+.dt-display-btn .dt-icon{color:var(--tx3)}
+.dt-display-btn .dt-text{flex:1}
+.dt-display-btn .dt-clear{color:var(--tx3);font-size:18px;line-height:1;background:none;border:none;padding:0 2px;cursor:pointer}
+#modal-dt .modal{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.dt-panel{padding:4px 0}
+.dt-section{margin-bottom:12px}
+.dt-section-label{font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-month-label{font-size:15px;font-weight:800;color:var(--tx)}
+.cal-nav-btn{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cal-nav-btn:hover{border-color:var(--pr);color:var(--pr)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--tx3);padding:4px 0}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:13px;font-weight:600;color:var(--tx2);cursor:pointer;transition:all .15s;border:2px solid transparent}
+.cal-day:hover{background:var(--sf3);color:var(--tx)}
+.cal-day.today{border-color:var(--pr);color:var(--pr)}
+.cal-day.selected{background:var(--pr);color:#fff!important;border-color:var(--pr)}
+.cal-day.other-month{opacity:.3}
+.clock-display{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px}
+.clock-num-box{width:68px;height:68px;border-radius:12px;background:var(--sf3);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:var(--tx);cursor:pointer;transition:all .15s;border:2px solid transparent}
+.clock-num-box.active{background:var(--pr);color:#fff;border-color:var(--pr)}
+.clock-colon{font-size:28px;font-weight:700;color:var(--tx2)}
+.clock-canvas-wrap{display:flex;justify-content:center;margin-bottom:8px}
+#clock-canvas{cursor:pointer;touch-action:none}
+.dt-separator{border:none;border-top:1px solid var(--bd);margin:10px 0}
+.rep-row-dt{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.rep-btn-dt{padding:7px 3px;border-radius:8px;border:1.5px solid var(--bd);background:var(--sf2);font-size:11px;font-weight:700;color:var(--tx2);text-align:center;transition:all .15s}
+.rep-btn-dt.sel{background:var(--pr2);border-color:var(--pr);color:var(--pr)}
+.dt-action-row{display:flex;gap:8px;margin-top:8px}
+
+/* BOOK */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sec-title{font-size:17px;font-weight:800;color:var(--pr)}
+.book-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:var(--sh);transition:background .2s}
+.book-header{display:flex;align-items:flex-start;gap:9px;margin-bottom:11px}
+.book-info{flex:1;min-width:0}
+.book-title-txt{font-size:14px;font-weight:700;color:var(--tx)}
+.book-meta-txt{font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.5}
+.round-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.round-tab{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid var(--bd);background:var(--sf2);color:var(--tx2);transition:all .15s}
+.round-tab.active{background:var(--pr);border-color:var(--pr);color:#fff}
+.prog-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.prog-stat{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px 6px;text-align:center}
+.prog-stat-n{font-size:14px;font-weight:900}
+.prog-stat-l{font-size:10px;color:var(--tx3);margin-top:2px}
+.prog-wrap{margin-bottom:10px}
+.prog-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);margin-bottom:5px}
+.prog-bar{height:7px;background:var(--sf3);border-radius:4px;overflow:visible;position:relative}
+.prog-fill{height:100%;border-radius:4px;transition:width .5s;background:linear-gradient(90deg,var(--pr),var(--ac))}
+.prog-fill.behind{background:linear-gradient(90deg,var(--ye),var(--re))}
+.prog-target{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ye);opacity:.8;pointer-events:none}
+.chart-wrap{background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:8px 8px 3px;margin-bottom:7px}
+.chart-legend{display:flex;gap:10px;font-size:10px;color:var(--tx2);padding:4px 3px 6px;flex-wrap:wrap}
+.ldot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px}
+.log-list{max-height:130px;overflow-y:auto}
+.log-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px;color:var(--tx2)}
+.log-row:last-child{border-bottom:none}
+.log-q{color:var(--tx);font-weight:600}
+.book-actions{display:flex;gap:6px;margin-top:11px;flex-wrap:wrap}
+.book-btn{padding:5px 10px;border-radius:8px;border:1.5px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:12px;font-weight:600;transition:all .15s}
+.book-btn:hover{border-color:var(--pr);color:var(--pr)}
+.milestones-wrap{margin-bottom:10px}
+.milestones-title{font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.milestones-table{width:100%;border-collapse:collapse;font-size:11px}
+.milestones-table th,.milestones-table td{padding:5px 6px;text-align:center;border:1px solid var(--bd)}
+.milestones-table th{background:var(--sf3);color:var(--tx2);font-weight:700}
+.milestones-table td{color:var(--tx2)}
+.milestones-table tr.current-round td{background:var(--pr2);color:var(--pr);font-weight:700}
+.milestones-table tr.done-round td{color:var(--gr)}
+
+/* MISC */
+.empty{text-align:center;padding:32px 20px;color:var(--tx3)}
+.empty-icon{font-size:32px;margin-bottom:8px}
+.empty p{font-size:13px}
+.toast{position:fixed;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--sf);color:var(--tx);border:1px solid var(--bd);padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:500;opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap}
+.toast.show{opacity:1}
+details summary{cursor:pointer;font-size:12px;color:var(--tx2);padding:4px 0;list-style:none}
+details summary::-webkit-details-marker{display:none}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:3px}
+.children-wrap{padding-left:20px;border-left:2px solid var(--bd);margin-left:10px;margin-top:4px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+.overdue-blink{animation:blink 1.6s infinite}
+.good{color:var(--gr)}.warn{color:var(--ye)}.bad{color:var(--re)}
+.color-opts{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+.copt{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s}
+.copt:hover{transform:scale(1.15)}
+.copt.sel{border-color:var(--tx);transform:scale(1.1)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-row1">
+    <div class="nav-tabs-main">
+      <button class="nav-tab-main active" onclick="goMainTab('todo')">ToDo</button>
+      <button class="nav-tab-main" onclick="goMainTab('books')">参考書進捗</button>
+    </div>
+    <div class="nav-end">
+      <button class="icon-btn" id="theme-btn" onclick="toggleTheme()">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="sub-nav" id="sub-nav-todo">
+    <div class="sub-nav-inner" id="sub-tabs-row"></div>
+  </div>
+</nav>
+
+<div class="pages-outer" id="pages-outer">
+  <div id="main-todo" style="display:block">
+    <div class="pages-track" id="todo-track"></div>
+    <button class="fab" id="todo-fab" onclick="openTodoModal(null)">+</button>
+  </div>
+  <div id="main-books" style="display:none;padding:14px 13px">
+    <div class="sec-head">
+      <span class="sec-title">参考書進捗</span>
+      <button class="icon-btn" onclick="openBookModal(null)">
+        <svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+    <div id="books-content"></div>
+  </div>
+</div>
+
+<!-- MODAL: TODO -->
+<div class="modal-bg" id="modal-todo">
+  <div class="modal">
+    <div class="modal-title" id="todo-modal-title">タスクを追加</div>
+    <div class="field"><label>タイトル</label><input type="text" id="t-title" placeholder="タスク名"></div>
+    <div class="field"><label>説明（任意）</label><textarea id="t-desc" rows="2" placeholder="詳細メモ…"></textarea></div>
+    <div class="field"><label>優先度</label>
+      <div class="pri-row">
+        <button class="pri-btn" id="pri-high" onclick="setPri('high')">高</button>
+        <button class="pri-btn sel-mid" id="pri-mid" onclick="setPri('mid')">中</button>
+        <button class="pri-btn" id="pri-low" onclick="setPri('low')">低</button>
+      </div>
+    </div>
+    <div class="field"><label>親タスク</label><select id="t-parent"><option value="">なし</option></select></div>
+    <div class="field"><label>日時（リマインド）</label>
+      <button class="dt-display-btn" id="dt-display-btn" onclick="openDtPicker()">
+        <svg class="ico dt-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="dt-text" id="dt-display-text">日時を選択</span>
+        <button class="dt-clear" id="dt-clear-btn" onclick="clearDt(event)" style="display:none">×</button>
+      </button>
+    </div>
+    <div class="row2">
+      <div class="field"><label>所要時間（分）</label><input type="number" id="t-dur" placeholder="例: 30" min="1"></div>
+      <div class="field"><label>繰り返し</label><select id="t-rep">
+        <option value="none">なし</option><option value="daily">毎日</option>
+        <option value="weekly">毎週</option><option value="monthly">毎月</option>
+      </select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-todo')">キャンセル</button>
+      <button class="btn-delete" id="todo-del-btn" onclick="deleteTodoCurrent()" style="display:none">削除</button>
+      <button class="btn-ok" onclick="saveTodo()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DT -->
+<div class="modal-bg" id="modal-dt">
+  <div class="modal" style="padding-top:14px">
+    <div class="modal-title">日時を設定</div>
+    <div class="dt-panel">
+      <div class="dt-section">
+        <div class="cal-header">
+          <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+          <span class="cal-month-label" id="cal-month-label"></span>
+          <button class="cal-nav-btn" onclick="calNext()">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <hr class="dt-separator">
+      <div class="dt-section">
+        <div class="dt-section-label">
+          <svg class="ico" style="width:13px;height:13px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>時刻を選択
+        </div>
+        <div class="clock-display">
+          <div class="clock-num-box" id="clock-h-box" onclick="setClockMode('h')">00</div>
+          <span class="clock-colon">:</span>
+          <div class="clock-num-box" id="clock-m-box" onclick="setClockMode('m')">00</div>
+        </div>
+        <div class="clock-canvas-wrap"><canvas id="clock-canvas" width="230" height="230"></canvas></div>
+      </div>
+      <hr class="dt-separator">
+      <div class="dt-section">
+        <div class="dt-section-label">
+          <svg class="ico" style="width:13px;height:13px" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>繰り返し
+        </div>
+        <div class="rep-row-dt">
+          <button class="rep-btn-dt sel" id="rep-none" onclick="setRepDt('none')">なし</button>
+          <button class="rep-btn-dt" id="rep-daily" onclick="setRepDt('daily')">毎日</button>
+          <button class="rep-btn-dt" id="rep-weekly" onclick="setRepDt('weekly')">毎週</button>
+          <button class="rep-btn-dt" id="rep-monthly" onclick="setRepDt('monthly')">毎月</button>
+        </div>
+      </div>
+    </div>
+    <div class="dt-action-row">
+      <button class="btn-cancel" onclick="closeModal('modal-dt')">キャンセル</button>
+      <button class="btn-ok" onclick="confirmDt()">完了</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CATEGORY -->
+<div class="modal-bg" id="modal-cat">
+  <div class="modal">
+    <div class="modal-title" id="cat-modal-title">リストを追加</div>
+    <div class="field"><label>リスト名</label><input type="text" id="c-name" placeholder="例：仕事、学校"></div>
+    <div class="field"><label>カラー</label><div class="color-opts" id="color-opts"></div></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-cat')">キャンセル</button>
+      <button class="btn-delete" id="cat-del-btn" onclick="deleteCatCurrent()" style="display:none">削除</button>
+      <button class="btn-ok" onclick="saveCat()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: BOOK -->
+<div class="modal-bg" id="modal-book">
+  <div class="modal">
+    <div class="modal-title" id="book-modal-title">参考書を追加</div>
+    <div class="field"><label>書籍名</label><input type="text" id="b-title" placeholder="例：数学IA 標準問題精講"></div>
+    <div class="row2">
+      <div class="field"><label>開始問題番号</label><input type="number" id="b-start" placeholder="0" min="0" value="0"></div>
+      <div class="field"><label>最大問題番号</label><input type="number" id="b-max" placeholder="300" min="1"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>開始日</label><input type="date" id="b-sdate"></div>
+      <div class="field"><label>期限日</label><input type="date" id="b-edate"></div>
+    </div>
+    <div class="field"><label>予定周回数</label><input type="number" id="b-rounds" placeholder="1" min="1" value="1"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-book')">キャンセル</button>
+      <button class="btn-delete" id="book-del-btn" onclick="deleteBookCurrent()" style="display:none">削除</button>
+      <button class="btn-ok" onclick="saveBook()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: LOG -->
+<div class="modal-bg" id="modal-log">
+  <div class="modal">
+    <div class="modal-title" id="log-modal-title">進捗を入力</div>
+    <div class="field"><label>今日解いた最後の問題番号</label><input type="number" id="l-num" placeholder="例：42" min="1"></div>
+    <div class="field"><label>周回目</label><select id="l-round"></select></div>
+    <div class="field"><label>日付</label><input type="date" id="l-date"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-log')">キャンセル</button>
+      <button class="btn-ok" onclick="saveLog()">記録</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── STATE ── */
+const COLORS=['#4A9EDB','#63C5DA','#52C8A0','#F0C040','#E07070','#A78BFA','#FB923C','#34D399','#F472B6','#94A3B8'];
+const KEY='planner_v3';
+let S=JSON.parse(localStorage.getItem(KEY)||'null')||{
+  todos:[],categories:[{id:'c1',name:'プロスピ',color:'#4A9EDB'},{id:'c2',name:'学校',color:'#52C8A0'},{id:'c3',name:'その他',color:'#A78BFA'}],
+  books:[],theme:'dark'
+};
+if(!S.theme)S.theme='dark';
+S.todos.forEach(t=>{if(!t.title&&t.text){t.title=t.text;delete t.text}if(!t.id)t.id='t'+Date.now()+Math.random();if(t.order==null)t.order=0;if(!t.parentId)t.parentId=null});
+function save(){localStorage.setItem(KEY,JSON.stringify(S))}
+
+/* ── THEME ── */
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('theme-btn').innerHTML=t==='dark'
+    ?`<svg class="ico" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`
+    :`<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+}
+applyTheme(S.theme);
+function toggleTheme(){S.theme=S.theme==='dark'?'light':'dark';applyTheme(S.theme);save()}
+
+/* ── MAIN TAB ── */
+let mainTab='todo';
+function goMainTab(tab){
+  mainTab=tab;
+  document.querySelectorAll('.nav-tab-main').forEach((b,i)=>b.classList.toggle('active',['todo','books'][i]===tab));
+  document.getElementById('main-todo').style.display=tab==='todo'?'block':'none';
+  document.getElementById('main-books').style.display=tab==='books'?'block':'none';
+  document.getElementById('sub-nav-todo').classList.toggle('visible',tab==='todo');
+  document.getElementById('todo-fab').style.display=tab==='todo'?'flex':'none';
+  if(tab==='todo')renderTodo();
+  if(tab==='books')renderBooks();
+}
+
+/* ── SUB TABS ── */
+let activeCatIdx=0;
+const doneSectionOpen={};
+
+function renderSubTabs(){
+  const now=new Date();
+  const row=document.getElementById('sub-tabs-row');
+  row.innerHTML='';
+  S.categories.forEach((c,i)=>{
+    const cnt=S.todos.filter(t=>t.catId===c.id&&!t.done&&!t.parentId).length;
+    const hasOverdue=S.todos.some(t=>t.catId===c.id&&!t.done&&t.dt&&new Date(t.dt)<=now);
+    const btn=document.createElement('button');
+    btn.className='sub-tab'+(i===activeCatIdx?' active':'')+(hasOverdue?' has-overdue':'');
+    btn.innerHTML=`<span>${esc(c.name)}</span><span class="sub-tab-badge">${cnt}</span>`
+      +(hasOverdue?`<span class="overdue-dot"></span>`:'')
+      +`<button class="sub-tab-menu-btn" title="メニュー">⋮</button>`;
+    btn.querySelector('.sub-tab-menu-btn').onclick=e=>{e.stopPropagation();openTabMenu(e,c.id)};
+    btn.onclick=e=>{if(e.target.classList.contains('sub-tab-menu-btn'))return;goSubTab(i)};
+    row.appendChild(btn);
+  });
+  const add=document.createElement('button');
+  add.className='sub-nav-add';add.textContent='+ 新しいリスト';add.onclick=()=>openCatModal(null);
+  row.appendChild(add);
+}
+
+function goSubTab(idx,anim=true){
+  if(idx<0||idx>=S.categories.length)return;
+  activeCatIdx=idx;
+  const track=document.getElementById('todo-track');
+  track.style.transition=anim?'transform .32s cubic-bezier(.4,0,.2,1)':'none';
+  track.style.transform=`translateX(-${idx*100}%)`;
+  document.querySelectorAll('.sub-tab').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  document.querySelectorAll('.sub-tab')[idx]?.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+}
+
+/* Context menu */
+let ctxMenu=null;
+function openTabMenu(e,catId){
+  closeCtxMenu();
+  const rect=e.currentTarget.getBoundingClientRect();
+  ctxMenu=document.createElement('div');ctxMenu.className='ctx-menu';
+  ctxMenu.style.top=(rect.bottom+4)+'px';ctxMenu.style.left=Math.min(rect.left,window.innerWidth-160)+'px';
+  ctxMenu.innerHTML=`<button class="ctx-item" onclick="openCatModal('${catId}');closeCtxMenu()">名前・色を変更</button>
+    <button class="ctx-item danger" onclick="confirmDeleteCat('${catId}');closeCtxMenu()">このリストを削除</button>`;
+  document.body.appendChild(ctxMenu);
+  setTimeout(()=>document.addEventListener('click',closeCtxMenu,{once:true}),10);
+}
+function closeCtxMenu(){if(ctxMenu){ctxMenu.remove();ctxMenu=null}}
+function confirmDeleteCat(id){
+  if(!confirm('このリストを削除しますか？\nタスクのリストは外れます。'))return;
+  S.categories=S.categories.filter(c=>c.id!==id);
+  S.todos.forEach(t=>{if(t.catId===id)t.catId=null});
+  if(activeCatIdx>=S.categories.length)activeCatIdx=Math.max(0,S.categories.length-1);
+  save();renderTodo();
+}
+
+/* ── SWIPE ── */
+(function(){
+  let sx=0,sy=0,active=false;
+  function ts(x,y){sx=x;sy=y;active=true}
+  function te(x,y){
+    if(!active)return;active=false;
+    const dx=x-sx,dy=y-sy;
+    if(Math.abs(dx)<Math.abs(dy)||Math.abs(dx)<28)return;
+    if(mainTab==='todo'){
+      if(dx<0)activeCatIdx<S.categories.length-1?goSubTab(activeCatIdx+1):goMainTab('books');
+      else if(activeCatIdx>0)goSubTab(activeCatIdx-1);
+    } else if(mainTab==='books'){
+      if(dx>0){activeCatIdx=Math.max(0,S.categories.length-1);goMainTab('todo')}
+    }
+  }
+  ['pages-outer','main-books'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.addEventListener('touchstart',e=>ts(e.touches[0].clientX,e.touches[0].clientY),{passive:true});
+    el.addEventListener('touchend',e=>te(e.changedTouches[0].clientX,e.changedTouches[0].clientY),{passive:true});
+  });
+})();
+
+/* ── TODO RENDER ── */
+const PO={high:0,mid:1,low:2};
+const REP={none:'',daily:'毎日',weekly:'毎週',monthly:'毎月'};
+
+function renderTodo(){
+  renderSubTabs();
+  const track=document.getElementById('todo-track');
+  track.innerHTML=S.categories.map((cat,i)=>{
+    const allRoot=S.todos.filter(t=>t.catId===cat.id&&!t.parentId);
+    const activeTodos=allRoot.filter(t=>!t.done).sort((a,b)=>(a.order||0)-(b.order||0)||PO[a.priority]-PO[b.priority]);
+    const doneTodos=allRoot.filter(t=>t.done).sort((a,b)=>(b.order||0)-(a.order||0));
+
+    const statsHtml=`<div class="stats-bar">
+      <div class="stat"><div class="stat-n">${allRoot.length}</div><div class="stat-l">合計</div></div>
+      <div class="stat"><div class="stat-n">${activeTodos.length}</div><div class="stat-l">未完了</div></div>
+      <div class="stat"><div class="stat-n">${doneTodos.length}</div><div class="stat-l">完了</div></div>
+    </div>`;
+
+    const activeHtml=activeTodos.length
+      ?activeTodos.map(t=>renderTodoItem(t)).join('')
+      :`<div class="empty"><div class="empty-icon">✓</div><p>未完了のタスクはありません</p></div>`;
+
+    const isOpen=doneSectionOpen[cat.id]===true;
+    const doneHtml=doneTodos.length?`
+      <div class="done-section ${isOpen?'open':'closed'}" id="done-sec-${cat.id}">
+        <div class="done-section-header" onclick="toggleDoneSection('${cat.id}')">
+          <span class="done-section-label">完了（${doneTodos.length}件）</span>
+          <span class="done-section-chevron"><svg class="ico" style="width:13px;height:13px" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
+        <div class="done-section-body">${doneTodos.map(t=>renderTodoItem(t)).join('')}</div>
+      </div>`:'';
+
+    return `<div class="page-slot" id="catslot-${cat.id}" data-catid="${cat.id}" data-catidx="${i}">
+      ${statsHtml}<div id="todolist-${cat.id}">${activeHtml}</div>${doneHtml}
+    </div>`;
+  }).join('');
+
+  track.style.transition='none';
+  track.style.transform=`translateX(-${activeCatIdx*100}%)`;
+  setTimeout(()=>track.style.transition='transform .32s cubic-bezier(.4,0,.2,1)',10);
+  initDragDrop();
+  updateDeadlineHighlights();
+}
+
+function toggleDoneSection(catId){
+  doneSectionOpen[catId]=!doneSectionOpen[catId];
+  const sec=document.getElementById('done-sec-'+catId);
+  if(!sec)return;
+  sec.classList.toggle('open',!!doneSectionOpen[catId]);
+  sec.classList.toggle('closed',!doneSectionOpen[catId]);
+}
+
+function renderTodoItem(t){
+  const now=new Date();
+  const hasDt=!!t.dt,dtDate=hasDt?new Date(t.dt):null;
+  const overdue=hasDt&&!t.done&&dtDate<now;
+  const deadlineCls=hasDt&&!t.done&&dtDate<=now?' deadline-passed':'';
+  const children=S.todos.filter(c=>c.parentId===t.id);
+  const priLabel=t.priority==='high'?'高':t.priority==='mid'?'中':'低';
+  const childrenHtml=children.length?`<div class="children-wrap">${children.map(c=>renderTodoItem(c)).join('')}</div>`:'';
+  const isChild=!!t.parentId;
+  return `<div class="todo-item p-${t.priority}${t.done?' done':''}${isChild?' child':''}${deadlineCls}" id="ti-${t.id}" data-id="${t.id}" draggable="true">
+    <div class="drag-handle"><svg class="ico" style="width:13px;height:13px" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="19" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+    <div class="cb${t.done?' checked':''}" onclick="toggleTodo('${t.id}')"></div>
+    <div class="todo-body" onclick="openTodoModal('${t.id}')">
+      <div class="todo-title">${esc(t.title)}</div>
+      ${t.desc?`<div class="todo-desc">${esc(t.desc)}</div>`:''}
+      <div class="todo-meta">
+        <span class="tag pri-${t.priority}">${priLabel}</span>
+        ${hasDt?`<span class="tag dt${overdue?' overdue overdue-blink':''}">${formatDt(t.dt)}</span>`:''}
+        ${t.dur?`<span class="tag dur">${t.dur}分</span>`:''}
+        ${t.repeat&&t.repeat!=='none'?`<span class="tag rep">${REP[t.repeat]}</span>`:''}
+        ${children.length?`<span class="tag dt">${children.filter(c=>c.done).length}/${children.length}</span>`:''}
+      </div>
+    </div>
+    <div class="item-actions">
+      <button class="item-btn del" onclick="deleteTodoItem('${t.id}',event)">
+        <svg class="ico" style="width:13px;height:13px" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>
+  </div>${childrenHtml}`;
+}
+
+function formatDt(dt){if(!dt)return'';const d=new Date(dt);return`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+
+function updateDeadlineHighlights(){realtimeTick()}
+
+/* ── COMPLETE ANIMATION ── */
+function toggleTodo(id){
+  const t=S.todos.find(x=>x.id===id);if(!t)return;
+  if(!t.done){
+    const el=document.getElementById('ti-'+id);
+    if(el){
+      el.classList.add('completing');
+      el.addEventListener('animationend',()=>{
+        t.done=true;handleRepeat(t);save();renderTodo();
+      },{once:true});
+      return;
+    }
+  }
+  t.done=false;save();renderTodo();
+}
+function handleRepeat(t){
+  if(t.done&&t.repeat&&t.repeat!=='none'){
+    const clone={...t,id:'t'+Date.now(),done:false,created:new Date().toISOString()};
+    if(t.dt){
+      const d=new Date(t.dt);
+      if(t.repeat==='daily')d.setDate(d.getDate()+1);
+      else if(t.repeat==='weekly')d.setDate(d.getDate()+7);
+      else if(t.repeat==='monthly')d.setMonth(d.getMonth()+1);
+      clone.dt=d.toISOString().slice(0,16);
+    }
+    S.todos.splice(S.todos.findIndex(x=>x.id===t.id)+1,0,clone);
+    showToast('繰り返しタスクを生成しました');scheduleReminder(clone);
+  }
+}
+
+/* ── TODO MODAL ── */
+let editTodoId=null,selPri='mid',tempDt=null,tempRep='none';
+function setPri(p){selPri=p;['high','mid','low'].forEach(x=>document.getElementById('pri-'+x).className='pri-btn'+(x===p?' sel-'+x:''))}
+function openTodoModal(id){
+  editTodoId=id;const t=id?S.todos.find(x=>x.id===id):null;
+  document.getElementById('todo-modal-title').textContent=id?'タスクを編集':'タスクを追加';
+  document.getElementById('t-title').value=t?t.title:'';
+  document.getElementById('t-desc').value=t?t.desc||'':'';
+  document.getElementById('t-dur').value=t&&t.dur?t.dur:'';
+  document.getElementById('t-rep').value=t&&t.repeat?t.repeat:'none';
+  setPri(t?t.priority:'mid');
+  tempDt=t&&t.dt?t.dt:null;tempRep=t&&t.repeat?t.repeat:'none';updateDtDisplay();
+  const currentCatId=t?t.catId:(S.categories[activeCatIdx]?.id||null);
+  const desc=id?getDescendants(id):[];
+  const eligible=S.todos.filter(x=>x.id!==id&&!desc.includes(x.id)&&x.catId===currentCatId&&!x.parentId);
+  document.getElementById('t-parent').innerHTML='<option value="">なし</option>'+eligible.map(x=>`<option value="${x.id}"${t&&t.parentId===x.id?' selected':''}>${esc(x.title)}</option>`).join('');
+  document.getElementById('todo-del-btn').style.display=id?'':'none';
+  openModal('modal-todo');setTimeout(()=>document.getElementById('t-title').focus(),250);
+}
+function getDescendants(id){const r=[];const w=p=>S.todos.filter(t=>t.parentId===p).forEach(t=>{r.push(t.id);w(t.id)});w(id);return r}
+function saveTodo(){
+  // Request notification permission on first user interaction
+  if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
+  const title=document.getElementById('t-title').value.trim();if(!title)return;
+  const dt=tempDt||null,dur=parseInt(document.getElementById('t-dur').value)||null;
+  const rep=document.getElementById('t-rep').value||'none';
+  const parentId=document.getElementById('t-parent').value||null;
+  const catId=S.categories[activeCatIdx]?.id||null;
+  if(editTodoId){const t=S.todos.find(x=>x.id===editTodoId);if(t)Object.assign(t,{title,desc:document.getElementById('t-desc').value.trim(),priority:selPri,dt,dur,repeat:rep,parentId})}
+  else{const mo=S.todos.filter(x=>!x.parentId&&x.catId===catId).reduce((m,x)=>Math.max(m,x.order||0),0);S.todos.push({id:'t'+Date.now(),title,desc:document.getElementById('t-desc').value.trim(),priority:selPri,dt,dur,repeat:rep,catId,parentId,done:false,order:mo+1,created:new Date().toISOString()})}
+  save();closeModal('modal-todo');renderTodo();
+  const sid=editTodoId||(S.todos[S.todos.length-1]?.id);
+  if(dt&&sid)scheduleReminder({id:sid,title,dt});
+}
+function deleteTodoCurrent(){if(!editTodoId||!confirm('このタスクを削除しますか？\n子タスクも削除されます。'))return;removeTaskTree(editTodoId);save();closeModal('modal-todo');renderTodo()}
+function removeTaskTree(id){S.todos.filter(t=>t.parentId===id).forEach(c=>removeTaskTree(c.id));S.todos=S.todos.filter(t=>t.id!==id)}
+function deleteTodoItem(id,e){e&&e.stopPropagation();removeTaskTree(id);save();renderTodo()}
+
+/* ── DT PICKER ── */
+let calYear=0,calMonth=0,pickedDate=null,pickedH=0,pickedM=0,clockMode='h',dtRepeat='none';
+function openDtPicker(){
+  const now=new Date();
+  if(tempDt){const d=new Date(tempDt);calYear=d.getFullYear();calMonth=d.getMonth();pickedDate=tempDt.slice(0,10);pickedH=d.getHours();pickedM=d.getMinutes()}
+  else{calYear=now.getFullYear();calMonth=now.getMonth();pickedDate=null;pickedH=now.getHours();pickedM=0}
+  dtRepeat=tempRep||'none';setClockMode('h');renderCalendar();renderClock();renderRepDt();openModal('modal-dt');
+}
+function clearDt(e){e&&e.stopPropagation();tempDt=null;tempRep='none';updateDtDisplay()}
+function updateDtDisplay(){
+  document.getElementById('dt-display-text').textContent=tempDt?formatDt(tempDt):'日時を選択';
+  document.getElementById('dt-clear-btn').style.display=tempDt?'':'none';
+}
+function confirmDt(){
+  if(pickedDate){tempDt=`${pickedDate}T${String(pickedH).padStart(2,'0')}:${String(pickedM).padStart(2,'0')}`;tempRep=dtRepeat;document.getElementById('t-rep').value=dtRepeat}
+  updateDtDisplay();closeModal('modal-dt');
+}
+function renderCalendar(){
+  document.getElementById('cal-month-label').textContent=`${calYear}年${calMonth+1}月`;
+  const g=document.getElementById('cal-grid'),today=todayStr();
+  let h=['月','火','水','木','金','土','日'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const first=(new Date(calYear,calMonth,1).getDay()+6)%7,dim=new Date(calYear,calMonth+1,0).getDate(),dip=new Date(calYear,calMonth,0).getDate();
+  for(let i=0;i<first;i++)h+=`<div class="cal-day other-month">${dip-first+1+i}</div>`;
+  for(let d=1;d<=dim;d++){const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const sel=ds===pickedDate,tod=ds===today;h+=`<div class="cal-day${sel?' selected':tod?' today':''}" onclick="pickDay('${ds}')">${d}</div>`}
+  g.innerHTML=h;
+}
+function calPrev(){calMonth===0?(calYear--,calMonth=11):calMonth--;renderCalendar()}
+function calNext(){calMonth===11?(calYear++,calMonth=0):calMonth++;renderCalendar()}
+function pickDay(ds){pickedDate=ds;renderCalendar()}
+function setClockMode(m){clockMode=m;document.getElementById('clock-h-box').classList.toggle('active',m==='h');document.getElementById('clock-m-box').classList.toggle('active',m==='m');renderClock()}
+function renderClock(){document.getElementById('clock-h-box').textContent=String(pickedH).padStart(2,'0');document.getElementById('clock-m-box').textContent=String(pickedM).padStart(2,'0');drawClock()}
+function drawClock(){
+  const canvas=document.getElementById('clock-canvas');if(!canvas)return;
+  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,R=W/2-14;
+  const st=getComputedStyle(document.documentElement);
+  const cSf3=st.getPropertyValue('--sf3').trim(),cPr=st.getPropertyValue('--pr').trim(),cTx=st.getPropertyValue('--tx').trim(),cTx2=st.getPropertyValue('--tx2').trim();
+  ctx.clearRect(0,0,W,H);ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.fillStyle=cSf3;ctx.fill();
+  const isH=clockMode==='h';
+  if(isH){
+    for(let i=0;i<24;i++){
+      const outer=i<12,r=outer?R-16:R-40,angle=i%12/12*Math.PI*2-Math.PI/2,x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle),isSel=i===pickedH;
+      if(isSel){ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.fillStyle=cPr;ctx.fill()}
+      ctx.fillStyle=isSel?'#fff':outer?cTx:cTx2;ctx.font=`${isSel?'bold ':''  }12px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i).padStart(2,'0'),x,y);
+    }
+    const outer=pickedH<12,r=outer?R-16:R-40,angle=pickedH%12/12*Math.PI*2-Math.PI/2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+r*Math.cos(angle),cy+r*Math.sin(angle));ctx.strokeStyle=cPr;ctx.lineWidth=2;ctx.stroke();
+  } else {
+    for(let i=0;i<12;i++){
+      const n=i*5,r=R-16,angle=i/12*Math.PI*2-Math.PI/2,x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle),isSel=n===pickedM;
+      if(isSel){ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.fillStyle=cPr;ctx.fill()}
+      ctx.fillStyle=isSel?'#fff':cTx2;ctx.font=`${isSel?'bold ':''  }12px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(n).padStart(2,'0'),x,y);
+    }
+    const r=R-16,angle=pickedM/60*Math.PI*2-Math.PI/2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+r*Math.cos(angle),cy+r*Math.sin(angle));ctx.strokeStyle=cPr;ctx.lineWidth=2;ctx.stroke();
+  }
+  ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fillStyle=cPr;ctx.fill();
+}
+function clockHit(cx,cy){
+  const canvas=document.getElementById('clock-canvas'),rect=canvas.getBoundingClientRect();
+  const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const nx=(cx-rect.left)*sx,ny=(cy-rect.top)*sy,ccx=canvas.width/2,ccy=canvas.height/2,R=canvas.width/2-14;
+  const ddx=nx-ccx,ddy=ny-ccy,dist=Math.sqrt(ddx*ddx+ddy*ddy);if(dist<8)return;
+  let angle=Math.atan2(ddy,ddx)+Math.PI/2;if(angle<0)angle+=Math.PI*2;
+  if(clockMode==='h'){let raw=Math.round(angle/(Math.PI*2)*12)%12;pickedH=dist<(R-16+R-40)/2?raw+12:raw;if(pickedH===24)pickedH=0;setClockMode('m')}
+  else{let raw=Math.round(angle/(Math.PI*2)*60)%60;raw=Math.round(raw/5)*5;if(raw>=60)raw=0;pickedM=raw;renderClock()}
+}
+document.getElementById('clock-canvas').addEventListener('click',e=>clockHit(e.clientX,e.clientY));
+document.getElementById('clock-canvas').addEventListener('touchend',e=>{e.preventDefault();clockHit(e.changedTouches[0].clientX,e.changedTouches[0].clientY)},{passive:false});
+function renderRepDt(){['none','daily','weekly','monthly'].forEach(r=>{const el=document.getElementById('rep-'+r);if(el)el.classList.toggle('sel',dtRepeat===r)})}
+function setRepDt(r){dtRepeat=r;renderRepDt()}
+
+/* ── DRAG & DROP ── */
+let dragId=null,dragOverId=null;
+function initDragDrop(){
+  document.querySelectorAll('.todo-item[draggable]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{dragId=e.currentTarget.dataset.id;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move'});
+    el.addEventListener('dragover',e=>{e.preventDefault();const id=e.currentTarget.dataset.id;if(id===dragId)return;dragOverId=id;document.querySelectorAll('.todo-item').forEach(x=>x.classList.remove('drag-over'));e.currentTarget.classList.add('drag-over')});
+    el.addEventListener('drop',e=>{e.preventDefault();if(dragId&&dragOverId&&dragOverId!==dragId)reorderTodos(dragId,dragOverId);dragId=null;dragOverId=null});
+    el.addEventListener('dragend',e=>{e.currentTarget.classList.remove('dragging');document.querySelectorAll('.todo-item').forEach(x=>x.classList.remove('drag-over'))});
+    el.addEventListener('touchstart',onTS,{passive:true});el.addEventListener('touchmove',onTM,{passive:false});el.addEventListener('touchend',onTE);
+  });
+}
+let tId=null,tClone=null,tSY=0;
+function onTS(e){if(!e.target.closest('.drag-handle'))return;tId=e.currentTarget.dataset.id;tSY=e.touches[0].clientY;const r=e.currentTarget.getBoundingClientRect();tClone=e.currentTarget.cloneNode(true);tClone.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;opacity:.8;pointer-events:none;z-index:999;border-radius:9px`;document.body.appendChild(tClone);e.currentTarget.style.opacity='.3'}
+function onTM(e){if(!tId||!tClone)return;e.preventDefault();const dy=e.touches[0].clientY-tSY;tClone.style.top=(parseFloat(tClone.style.top)+dy)+'px';tSY=e.touches[0].clientY;const u=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY)?.closest('.todo-item');document.querySelectorAll('.todo-item').forEach(x=>x.classList.remove('drag-over'));if(u&&u.dataset.id!==tId){dragOverId=u.dataset.id;u.classList.add('drag-over')}}
+function onTE(){if(!tId)return;if(tClone){tClone.remove();tClone=null}document.querySelectorAll('.todo-item').forEach(x=>{x.classList.remove('drag-over');x.style.opacity=''});if(dragOverId&&dragOverId!==tId)reorderTodos(tId,dragOverId);tId=null;dragOverId=null}
+function reorderTodos(fId,tId2){const f=S.todos.find(t=>t.id===fId),to=S.todos.find(t=>t.id===tId2);if(!f||!to)return;f.order=(to.order||0)-0.5;S.todos.filter(t=>t.catId===f.catId&&!t.parentId).sort((a,b)=>(a.order||0)-(b.order||0)).forEach((t,i)=>t.order=i);save();renderTodo()}
+
+/* ── REMINDERS & REALTIME HIGHLIGHTS ── */
+const remTimers={};
+const firedNotifs=new Set(); // avoid duplicate notifications
+
+/* Request permission on load with user-gesture fallback */
+async function requestNotifPerm(){
+  if(typeof Notification==='undefined')return;
+  if(Notification.permission==='default'){
+    // Attempt immediately; browsers may require a gesture
+    try{ await Notification.requestPermission(); }catch(e){}
+  }
+}
+requestNotifPerm();
+
+/* Show a native notification, falling back to in-app toast */
+function fireNotification(t){
+  const title='📌 期限: '+t.title;
+  const body=S.todos.find(x=>x.id===t.id)?.desc||'期限が来ました';
+  showToast('🔔 '+t.title+' の期限が来ました');
+  if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
+    try{
+      const n=new Notification(title,{
+        body,tag:t.id,requireInteraction:true,
+        icon:'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📌</text></svg>',
+        badge:'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📌</text></svg>',
+        vibrate:[200,100,200],
+      });
+      n.onclick=()=>{window.focus();n.close()};
+    }catch(e){console.warn('Notification error:',e)}
+  }
+}
+
+/* Schedule a future reminder via setTimeout */
+function scheduleReminder(t){
+  if(!t.dt)return;
+  const ms=new Date(t.dt)-Date.now();
+  if(ms<=0)return; // already past; realtime loop handles highlights
+  if(remTimers[t.id])clearTimeout(remTimers[t.id]);
+  remTimers[t.id]=setTimeout(()=>{
+    if(!firedNotifs.has(t.id)){
+      firedNotifs.add(t.id);
+      fireNotification(t);
+    }
+    realtimeTick(); // immediately update highlights
+  },ms);
+}
+
+/* ── REALTIME TICK (every second) ── */
+/* Updates:
+   1. todo-item deadline-passed class
+   2. sub-tab has-overdue class + dot
+   3. Fires notifications for tasks that just passed
+*/
+function realtimeTick(){
+  const now=new Date();
+
+  // 1. Update individual item highlights
+  document.querySelectorAll('.todo-item[data-id]').forEach(el=>{
+    const t=S.todos.find(x=>x.id===el.dataset.id);
+    if(!t||t.done||!t.dt)return;
+    const passed=new Date(t.dt)<=now;
+    el.classList.toggle('deadline-passed',passed);
+    // Fire notification for tasks whose deadline just passed this tick
+    if(passed&&!firedNotifs.has(t.id)){
+      firedNotifs.add(t.id);
+      fireNotification(t);
+    }
+  });
+
+  // 2. Update sub-tab overdue indicators
+  updateSubTabOverdueBadges();
+}
+
+function updateSubTabOverdueBadges(){
+  const now=new Date();
+  document.querySelectorAll('.sub-tab').forEach((tabEl,i)=>{
+    if(i>=S.categories.length)return;
+    const cat=S.categories[i];
+    const hasOverdue=S.todos.some(t=>t.catId===cat.id&&!t.done&&t.dt&&new Date(t.dt)<=now);
+    tabEl.classList.toggle('has-overdue',hasOverdue);
+    // manage dot element
+    let dot=tabEl.querySelector('.overdue-dot');
+    if(hasOverdue&&!dot){
+      dot=document.createElement('span');dot.className='overdue-dot';
+      tabEl.appendChild(dot);
+    } else if(!hasOverdue&&dot){
+      dot.remove();
+    }
+  });
+}
+
+// Mark already-fired notifications on load
+S.todos.filter(t=>!t.done&&t.dt&&new Date(t.dt)<=new Date()).forEach(t=>firedNotifs.add(t.id));
+// Schedule future reminders
+S.todos.filter(t=>!t.done&&t.dt&&new Date(t.dt)>new Date()).forEach(scheduleReminder);
+// Realtime tick every second
+setInterval(realtimeTick,1000);
+// Also run once immediately after DOM settles
+setTimeout(realtimeTick,200);
+
+/* ── CATEGORY MODAL ── */
+let editCatId=null,selColor=COLORS[0];
+function openCatModal(id){
+  editCatId=id;const cat=id?S.categories.find(c=>c.id===id):null;
+  document.getElementById('cat-modal-title').textContent=id?'リストを編集':'リストを追加';
+  document.getElementById('c-name').value=cat?cat.name:'';selColor=cat?cat.color:COLORS[0];renderColorOpts();
+  document.getElementById('cat-del-btn').style.display=id?'':'none';openModal('modal-cat');
+}
+function renderColorOpts(){document.getElementById('color-opts').innerHTML=COLORS.map(c=>`<div class="copt${c===selColor?' sel':''}" style="background:${c}" onclick="pickColor('${c}')"></div>`).join('')}
+function pickColor(c){selColor=c;renderColorOpts()}
+function saveCat(){
+  const name=document.getElementById('c-name').value.trim();if(!name)return;
+  if(editCatId){const cat=S.categories.find(c=>c.id===editCatId);if(cat){cat.name=name;cat.color=selColor}}
+  else{S.categories.push({id:'c'+Date.now(),name,color:selColor});activeCatIdx=S.categories.length-1}
+  save();closeModal('modal-cat');renderTodo();
+}
+function deleteCatCurrent(){
+  if(!editCatId||!confirm('このリストを削除しますか？\nタスクのリストは外れます。'))return;
+  S.categories=S.categories.filter(c=>c.id!==editCatId);S.todos.forEach(t=>{if(t.catId===editCatId)t.catId=null});
+  if(activeCatIdx>=S.categories.length)activeCatIdx=Math.max(0,S.categories.length-1);
+  save();closeModal('modal-cat');renderTodo();
+}
+
+/* ── BOOK MODAL ── */
+let editBookId=null,logBookId=null;
+const bookRound={}; // bookId → roundIdx(0-based) or -1(全体)
+
+function openBookModal(id){
+  editBookId=id;const b=id?S.books.find(x=>x.id===id):null;
+  document.getElementById('book-modal-title').textContent=id?'参考書を編集':'参考書を追加';
+  document.getElementById('b-title').value=b?b.title:'';
+  document.getElementById('b-start').value=b!=null?b.startQ:0;document.getElementById('b-max').value=b?b.maxQ:'';
+  document.getElementById('b-sdate').value=b&&b.sdate?b.sdate:todayStr();document.getElementById('b-edate').value=b?b.edate:'';
+  document.getElementById('b-rounds').value=b?b.rounds:1;document.getElementById('book-del-btn').style.display=id?'':'none';openModal('modal-book');
+}
+function saveBook(){
+  const title=document.getElementById('b-title').value.trim(),maxQ=parseInt(document.getElementById('b-max').value),startQ=parseInt(document.getElementById('b-start').value)||0;
+  const sdate=document.getElementById('b-sdate').value,edate=document.getElementById('b-edate').value,rounds=parseInt(document.getElementById('b-rounds').value)||1;
+  if(!title||!maxQ||!edate)return;
+  if(editBookId){const b=S.books.find(x=>x.id===editBookId);if(b)Object.assign(b,{title,maxQ,startQ,sdate,edate,rounds})}
+  else S.books.push({id:'b'+Date.now(),title,maxQ,startQ,sdate,edate,rounds,logs:[]});
+  save();closeModal('modal-book');renderBooks();
+}
+function deleteBookCurrent(){if(!editBookId||!confirm('この参考書を削除しますか？'))return;S.books=S.books.filter(b=>b.id!==editBookId);save();closeModal('modal-book');renderBooks()}
+function openLogModal(bookId){
+  logBookId=bookId;const book=S.books.find(b=>b.id===bookId);
+  document.getElementById('log-modal-title').textContent=book.title;document.getElementById('l-num').value='';document.getElementById('l-date').value=todayStr();
+  const rs=document.getElementById('l-round');rs.innerHTML=Array.from({length:book.rounds||1},(_,i)=>`<option value="${i+1}">${i+1}周目</option>`).join('');
+  const cur=bookRound[bookId];rs.value=(cur!=null&&cur>=0)?cur+1:1;openModal('modal-log');
+}
+function saveLog(){
+  const num=parseInt(document.getElementById('l-num').value),date=document.getElementById('l-date').value,round=parseInt(document.getElementById('l-round').value)||1;
+  if(!num||!date)return;const book=S.books.find(b=>b.id===logBookId);if(!book)return;
+  book.logs=book.logs.filter(l=>!(l.date===date&&(l.round||1)===round));
+  book.logs.push({date,lastQ:num,round});book.logs.sort((a,b)=>a.date.localeCompare(b.date)||(a.round||1)-(b.round||1));
+  bookRound[logBookId]=round-1;save();closeModal('modal-log');renderBooks();
+}
+
+/* ── BOOK RENDER ── */
+function renderBooks(){
+  const el=document.getElementById('books-content');
+  if(!S.books.length){el.innerHTML=`<div class="empty"><p>参考書を追加してください</p></div>`;return}
+  el.innerHTML=S.books.map(b=>buildBookCard(b)).join('');
+  S.books.forEach(b=>{const ri=bookRound[b.id];ri===-1?drawChartAll(b):drawChart(b,ri||0)});
+}
+function setBookRound(bookId,ri){bookRound[bookId]=ri;renderBooks()}
+
+/* Overall pace */
+function calcOverall(book){
+  const totalP=book.maxQ-book.startQ,rounds=book.rounds||1,maxTotal=totalP*rounds;
+  const today=todayStr(),dStart=new Date(book.sdate||today),dDeadline=new Date(book.edate),dToday=new Date(today);
+  const totalDays=Math.max(1,Math.round((dDeadline-dStart)/86400000)),elapsedDays=Math.max(0,Math.round((dToday-dStart)/86400000));
+  const daysLeft=Math.ceil((dDeadline-dToday)/86400000);
+  let totalSolved=0;
+  for(let r=1;r<=rounds;r++){const rl=book.logs.filter(l=>(l.round||1)===r);if(rl.length)totalSolved+=Math.min(totalP,rl[rl.length-1].lastQ-book.startQ)}
+  const expectedTotal=Math.round(maxTotal*elapsedDays/totalDays);
+  const achievePct=maxTotal>0?Math.min(100,Math.round(totalSolved/maxTotal*100)):0;
+  const expectedPct=maxTotal>0?Math.min(100,Math.round(expectedTotal/maxTotal*100)):0;
+  const diff=totalSolved-expectedTotal,dpp=totalDays/Math.max(1,maxTotal),daysDiff=Math.abs(Math.round(diff*dpp));
+  let diffLabel='',diffCls='';
+  if(diff>0){diffLabel=`${daysDiff}日分 先行`;diffCls='good'}else if(diff<0){diffLabel=`${daysDiff}日分 遅延`;diffCls='bad'}else{diffLabel='ペース通り';diffCls=''}
+  return{achievePct,expectedPct,diffLabel,diffCls,daysLeft,totalSolved,expectedTotal,maxTotal};
+}
+
+function buildMilestones(book){
+  const rounds=book.rounds||1,totalP=book.maxQ-book.startQ;
+  const dStart=new Date(book.sdate||todayStr()),dEnd=new Date(book.edate);
+  const totalDays=Math.max(1,Math.round((dEnd-dStart)/86400000)),dpr=Math.floor(totalDays/rounds);
+  const dToday=new Date(todayStr());let rows='';
+  for(let r=1;r<=rounds;r++){
+    const s=(r-1)*dpr,e=r===rounds?totalDays:r*dpr;
+    const sd=new Date(dStart.getTime()+s*86400000),ed=new Date(dStart.getTime()+e*86400000);
+    const fmt=d=>`${d.getMonth()+1}/${d.getDate()}`;
+    const rl=book.logs.filter(l=>(l.round||1)===r),last=rl.length?rl[rl.length-1]:null;
+    const prog=last?Math.min(100,Math.round((last.lastQ-book.startQ)/totalP*100)):0;
+    const isDone=prog>=100,isCur=dToday>=sd&&dToday<ed;
+    rows+=`<tr class="${isDone?'done-round':isCur?'current-round':''}"><td>${r}周目</td><td>${fmt(sd)}〜${fmt(ed)}</td><td>${e-s}日</td><td>${prog}%</td></tr>`;
+  }
+  return`<div class="milestones-wrap"><div class="milestones-title">周回別スケジュール</div><table class="milestones-table"><thead><tr><th>周回</th><th>期間</th><th>日数</th><th>進捗</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function buildBookCard(book){
+  const today=todayStr(),totalP=book.maxQ-book.startQ,rounds=book.rounds||1;
+  const ri=bookRound[book.id],isAll=(ri==null||ri===-1),roundIdx=isAll?0:ri,roundNum=roundIdx+1;
+  const dStart=new Date(book.sdate||today),dDeadline=new Date(book.edate),dToday=new Date(today);
+  const totalDays=Math.max(1,Math.round((dDeadline-dStart)/86400000)),elapsedDays=Math.max(0,Math.round((dToday-dStart)/86400000));
+
+  const roundTabs=Array.from({length:rounds},(_,i)=>`<button class="round-tab${!isAll&&i===roundIdx?' active':''}" onclick="setBookRound('${book.id}',${i})">${i+1}周目</button>`).join('')+
+    `<button class="round-tab${isAll?' active':''}" onclick="setBookRound('${book.id}',-1)">全体</button>`;
+
+  let achievePct,expectedPct,diffLabel,diffCls,daysLeft,curLabel,expLabel,progBar,progTarget,logsForDisp=[];
+  if(isAll){
+    const p=calcOverall(book);achievePct=p.achievePct;expectedPct=p.expectedPct;diffLabel=p.diffLabel;diffCls=p.diffCls;daysLeft=p.daysLeft;
+    progBar=achievePct;progTarget=expectedPct;curLabel=`${p.totalSolved}問`;expLabel=`${p.expectedTotal}問`;
+    logsForDisp=[...book.logs].reverse().slice(0,5);
+  } else {
+    const rl=book.logs.filter(l=>(l.round||1)===roundNum),last=rl.length?rl[rl.length-1]:null;
+    const solved=last?last.lastQ-book.startQ:0;achievePct=totalP>0?Math.min(100,Math.round(solved/totalP*100)):0;
+    const dpr=Math.floor(totalDays/rounds),rS=roundIdx*dpr,rE=roundIdx===rounds-1?totalDays:(roundIdx+1)*dpr;
+    const rEl=Math.max(0,elapsedDays-rS),rDays=Math.max(1,rE-rS);
+    expectedPct=Math.min(100,Math.round(rEl/rDays*100));
+    daysLeft=Math.ceil((dDeadline-dToday)/86400000);
+    // overall pace comparison
+    const ov=calcOverall(book);diffLabel=ov.diffLabel;diffCls=ov.diffCls;
+    progBar=achievePct;progTarget=expectedPct;curLabel=`Q${last?last.lastQ:book.startQ}`;expLabel=`Q${book.startQ+Math.round(totalP*elapsedDays/totalDays)}`;
+    logsForDisp=[...rl].reverse().slice(0,5);
+  }
+
+  const logsHtml=logsForDisp.length
+    ?logsForDisp.map(l=>`<div class="log-row"><span>${l.date}</span><span class="log-q">${isAll?`${l.round||1}周目 Q${l.lastQ}`:`Q${l.lastQ}`}</span><span>${Math.round((l.lastQ-book.startQ)/totalP*100)}%</span></div>`).join('')
+    :`<div style="color:var(--tx3);font-size:12px;padding:6px 0">記録がありません</div>`;
+
+  return`<div class="book-card" id="bc-${book.id}">
+    <div class="book-header">
+      <div class="book-info">
+        <div class="book-title-txt">${esc(book.title)}</div>
+        <div class="book-meta-txt">Q${book.startQ}〜Q${book.maxQ}（全${totalP}問） / ${book.sdate}〜${book.edate} / ${rounds}周</div>
+      </div>
+      <button class="icon-btn" onclick="openBookModal('${book.id}')"><svg class="ico" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+    </div>
+    <div class="round-tabs">${roundTabs}</div>
+    ${rounds>1?buildMilestones(book):''}
+    <div class="prog-stats">
+      <div class="prog-stat"><div class="prog-stat-n ${diffCls}">${achievePct}%</div><div class="prog-stat-l">達成率${isAll?'（全体）':`（${roundNum}周目）`}</div></div>
+      <div class="prog-stat"><div class="prog-stat-n ${diffCls}" style="font-size:12px">${diffLabel}</div><div class="prog-stat-l">計画比（全体）</div></div>
+      <div class="prog-stat"><div class="prog-stat-n ${daysLeft>0?(daysLeft<=7?'warn':''):'bad'}">${daysLeft>0?daysLeft+'日':'期限切れ'}</div><div class="prog-stat-l">残り日数</div></div>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-labels"><span>現在 ${curLabel}</span><span>目標 ${expLabel}</span></div>
+      <div class="prog-bar">
+        <div class="prog-fill${progBar<progTarget?' behind':''}" style="width:${progBar}%"></div>
+        <div class="prog-target" style="left:clamp(0%,${progTarget}%,100%)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);margin-top:4px">
+        <span>${book.sdate?book.sdate.slice(5):''}</span><span>${isAll?`0〜${totalP*rounds}問`:`Q${book.startQ}〜Q${book.maxQ}`}</span><span>${book.edate.slice(5)}</span>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="chart-${book.id}" width="440" height="148" style="width:100%;height:auto;display:block"></canvas></div>
+    <div class="chart-legend">
+      <span><span class="ldot" style="background:var(--pr)"></span>${isAll?'全体目標ライン':`目標ライン（${roundNum}周目）`}</span>
+      <span><span class="ldot" style="background:var(--ac)"></span>実績</span>
+      <span><span class="ldot" style="background:var(--ye)"></span>今日</span>
+    </div>
+    <details><summary>記録履歴（直近5件）</summary><div class="log-list" style="margin-top:7px">${logsHtml}</div></details>
+    <div class="book-actions"><button class="book-btn" onclick="openLogModal('${book.id}')">進捗入力</button></div>
+  </div>`;
+}
+
+/* Chart helpers */
+function chartBase(ctx,W,H){
+  const PAD={l:34,r:10,t:9,b:22},cW=W-PAD.l-PAD.r,cH=H-PAD.t-PAD.b;
+  const st=getComputedStyle(document.documentElement);
+  const cPr=st.getPropertyValue('--pr').trim(),cAc=st.getPropertyValue('--ac').trim(),cYe=st.getPropertyValue('--ye').trim();
+  const cGrid=st.getPropertyValue('--sf3').trim(),cMuted=st.getPropertyValue('--tx3').trim();
+  ctx.strokeStyle=cGrid;ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=PAD.t+cH*i/4;ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(PAD.l+cW,y);ctx.stroke();ctx.fillStyle=cMuted;ctx.font='9px sans-serif';ctx.textAlign='right';ctx.fillText((100-i*25)+'%',PAD.l-3,y+3)}
+  return{PAD,cW,cH,cPr,cAc,cYe,cMuted};
+}
+function chartFinish(ctx,PAD,cW,cH,cYe,cMuted,today,xOf){
+  const tx=xOf(today);
+  if(tx>=PAD.l&&tx<=PAD.l+cW){ctx.beginPath();ctx.strokeStyle='rgba(240,192,64,.55)';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.moveTo(tx,PAD.t);ctx.lineTo(tx,PAD.t+cH);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=cYe;ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText('今日',tx,PAD.t+cH+13)}
+}
+
+function drawChart(book,roundIdx){
+  const canvas=document.getElementById('chart-'+book.id);if(!canvas)return;
+  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
+  const totalP=book.maxQ-book.startQ,today=todayStr(),rounds=book.rounds||1;
+  const roundNum=(roundIdx||0)+1,rl=book.logs.filter(l=>(l.round||1)===roundNum);
+  const dStart=new Date(book.sdate||today),dDeadline=new Date(book.edate);
+  const totalDays=Math.max(1,Math.round((dDeadline-dStart)/86400000)),dpr=Math.floor(totalDays/rounds);
+  const rSO=roundIdx*dpr,rEO=roundIdx===rounds-1?totalDays:(roundIdx+1)*dpr;
+  const rStart=new Date(dStart.getTime()+rSO*86400000),rEnd=new Date(dStart.getTime()+rEO*86400000);
+  const rDays=Math.max(1,Math.round((rEnd-rStart)/86400000));
+  const {PAD,cW,cH,cPr,cAc,cYe,cMuted}=chartBase(ctx,W,H);
+  const xOf=ds=>PAD.l+Math.max(0,Math.min(1,Math.round((new Date(ds)-rStart)/86400000)/rDays))*cW;
+  const yOf=pct=>PAD.t+(1-Math.min(100,pct)/100)*cH;
+  ctx.beginPath();ctx.strokeStyle=cPr;ctx.lineWidth=2;ctx.setLineDash([5,3]);ctx.moveTo(PAD.l,yOf(0));ctx.lineTo(PAD.l+cW,yOf(100));ctx.stroke();ctx.setLineDash([]);
+  if(rl.length){
+    const pts=rl.map(l=>({x:xOf(l.date),y:yOf(Math.min(100,Math.round((l.lastQ-book.startQ)/totalP*100)))}));
+    ctx.beginPath();ctx.moveTo(PAD.l,yOf(0));pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(pts[pts.length-1].x,PAD.t+cH);ctx.lineTo(PAD.l,PAD.t+cH);ctx.closePath();
+    const g=ctx.createLinearGradient(0,PAD.t,0,PAD.t+cH);g.addColorStop(0,'rgba(99,197,218,.22)');g.addColorStop(1,'rgba(99,197,218,.02)');ctx.fillStyle=g;ctx.fill();
+    ctx.beginPath();ctx.strokeStyle=cAc;ctx.lineWidth=2.5;ctx.moveTo(PAD.l,yOf(0));pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();
+    pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle=cAc;ctx.fill()});
+  }
+  chartFinish(ctx,PAD,cW,cH,cYe,cMuted,today,xOf);
+  const fmt=d=>`${d.getMonth()+1}/${d.getDate()}`;
+  ctx.fillStyle=cMuted;ctx.font='9px sans-serif';ctx.textAlign='left';ctx.fillText(fmt(rStart),PAD.l,PAD.t+cH+13);ctx.textAlign='right';ctx.fillText(fmt(rEnd),PAD.l+cW,PAD.t+cH+13);
+}
+
+function drawChartAll(book){
+  const canvas=document.getElementById('chart-'+book.id);if(!canvas)return;
+  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
+  const totalP=book.maxQ-book.startQ,rounds=book.rounds||1,maxTotal=totalP*rounds;
+  const today=todayStr(),dStart=new Date(book.sdate||today),dDeadline=new Date(book.edate);
+  const totalDays=Math.max(1,Math.round((dDeadline-dStart)/86400000));
+  const allDates=[...new Set(book.logs.map(l=>l.date))].sort();
+  const ptMap={};
+  allDates.forEach(d=>{let tot=0;for(let r=1;r<=rounds;r++){const rl=book.logs.filter(l=>(l.round||1)===r&&l.date<=d);if(rl.length)tot+=Math.min(totalP,rl[rl.length-1].lastQ-book.startQ)}ptMap[d]=tot});
+  const {PAD,cW,cH,cPr,cAc,cYe,cMuted}=chartBase(ctx,W,H);
+  const xOf=ds=>PAD.l+Math.max(0,Math.min(1,Math.round((new Date(ds)-dStart)/86400000)/totalDays))*cW;
+  const yOf=pct=>PAD.t+(1-Math.min(100,pct)/100)*cH;
+  ctx.beginPath();ctx.strokeStyle=cPr;ctx.lineWidth=2;ctx.setLineDash([5,3]);ctx.moveTo(PAD.l,yOf(0));ctx.lineTo(PAD.l+cW,yOf(100));ctx.stroke();ctx.setLineDash([]);
+  if(allDates.length){
+    const pts=allDates.map(d=>({x:xOf(d),y:yOf(maxTotal>0?ptMap[d]/maxTotal*100:0)}));
+    ctx.beginPath();ctx.moveTo(PAD.l,yOf(0));pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(pts[pts.length-1].x,PAD.t+cH);ctx.lineTo(PAD.l,PAD.t+cH);ctx.closePath();
+    const g=ctx.createLinearGradient(0,PAD.t,0,PAD.t+cH);g.addColorStop(0,'rgba(99,197,218,.22)');g.addColorStop(1,'rgba(99,197,218,.02)');ctx.fillStyle=g;ctx.fill();
+    ctx.beginPath();ctx.strokeStyle=cAc;ctx.lineWidth=2.5;ctx.moveTo(PAD.l,yOf(0));pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();
+    pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,Math.PI*2);ctx.fillStyle=cAc;ctx.fill()});
+  }
+  chartFinish(ctx,PAD,cW,cH,cYe,cMuted,today,xOf);
+  const fmt=d=>`${d.getMonth()+1}/${d.getDate()}`;
+  ctx.fillStyle=cMuted;ctx.font='9px sans-serif';ctx.textAlign='left';ctx.fillText(fmt(dStart),PAD.l,PAD.t+cH+13);ctx.textAlign='right';ctx.fillText(fmt(dDeadline),PAD.l+cW,PAD.t+cH+13);
+}
+
+/* ── UTILS ── */
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+let toastTimer=null;
+function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3000)}
+
+/* ── INIT ── */
+document.getElementById('sub-nav-todo').classList.add('visible');
+renderTodo();
+</script>
+</body>
+</html>
