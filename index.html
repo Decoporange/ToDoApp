@@ -637,18 +637,70 @@ function renderSidebar() {
 </script>
 
 <script>
-/* ══ SERVICE WORKER REGISTRATION ══ */
+/* ══ SERVICE WORKER + NOTIFICATION SYSTEM ══
+   バックグラウンド通知の実現方法（優先順位順）:
+
+   1. Notification Triggers API (TimestampTrigger)
+      → Chrome 80+ Android で利用可能
+      → OS レベルのタイマー。SW が死んでいても確実に発火
+      → showNotification に showTrigger オプションを渡すだけ
+
+   2. Periodic Background Sync
+      → 最小間隔は OS/ブラウザが決める（Android は ~15分）
+      → SW を定期的に起こして期限切れをチェック
+
+   3. フォアグラウンド setTimeout（アプリ開いてる時のバックアップ）
+══════════════════════════════════════════════ */
 let swReg = null;
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then(reg => {
-    swReg = reg;
-    console.log('SW registered:', reg.scope);
-  }).catch(e => console.warn('SW failed:', e));
+
+async function initSW() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    swReg = await navigator.serviceWorker.register('./sw.js');
+    // 新バージョンが来たら即適用
+    swReg.addEventListener('updatefound', () => {
+      const nw = swReg.installing;
+      nw.addEventListener('statechange', () => {
+        if (nw.state === 'activated') location.reload();
+      });
+    });
+    // コントローラが変わったとき（初回登録後）に全リマインダーを再同期
+    navigator.serviceWorker.addEventListener('controllerchange', syncAllRemindersToSW);
+    // 既にコントローラがいれば今すぐ同期
+    if (navigator.serviceWorker.controller) syncAllRemindersToSW();
+  } catch (e) {
+    console.warn('[SW] registration failed:', e);
+  }
 }
 
 function swPost(msg) {
-  if (!navigator.serviceWorker?.controller) return;
-  navigator.serviceWorker.controller.postMessage(msg);
+  const ctrl = navigator.serviceWorker?.controller;
+  if (!ctrl) return;
+  ctrl.postMessage(msg);
+}
+
+/* 全リマインダーを SW に一括送信（ページ起動時・SW 更新時） */
+function syncAllRemindersToSW() {
+  const items = S.todos
+    .filter(t => !t.done && t.dt && new Date(t.dt) > new Date())
+    .map(t => ({ id: t.id, title: t.title, body: t.desc || '', fireAt: new Date(t.dt).getTime() }));
+  swPost({ type: 'SYNC_ALL', items });
+}
+
+/* Periodic Background Sync の登録 */
+async function initPeriodicSync() {
+  if (!swReg) return;
+  if (!('periodicSync' in swReg)) return;
+  try {
+    const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+    if (status.state === 'granted') {
+      await swReg.periodicSync.register('planner-reminders', {
+        minInterval: 15 * 60 * 1000, // 15分（OS が調整する）
+      });
+    }
+  } catch (e) {
+    // 未対応ブラウザでは無視
+  }
 }
 
 /* ══ STATE ══ */
@@ -705,22 +757,7 @@ async function ensureNotifPermission() {
   return p === 'granted';
 }
 
-function showNativeNotif(title, body, tag) {
-  if (!notifGranted()) { showToast('🔔 ' + title); return; }
-  try {
-    const n = new Notification(title, {
-      body: body || '',
-      tag: tag || 'planner',
-      requireInteraction: true,
-      icon: './icon-192.png',
-      badge: './icon-192.png',
-      vibrate: [200, 100, 200],
-    });
-    n.onclick = () => { window.focus(); n.close(); };
-  } catch (e) { showToast('🔔 ' + title); }
-}
-
-/* Schedule a reminder: try SW first, fall back to setTimeout */
+/* ─ フォアグラウンド用タイマー（バックアップ）─ */
 const localTimers = {};
 const firedSet = new Set();
 
@@ -729,21 +766,30 @@ function scheduleReminder(t) {
   const fireAt = new Date(t.dt).getTime();
   const ms = fireAt - Date.now();
 
-  // Cancel any existing timer for this id
-  if (localTimers[t.id]) clearTimeout(localTimers[t.id]);
-
-  // Tell SW to schedule (survives app being backgrounded)
+  // SW（TimestampTrigger + IndexedDB + PeriodicSync）に渡す
+  // → これがバックグラウンド通知の本体
   swPost({ type: 'SCHEDULE', id: t.id, title: t.title, body: t.desc || '', fireAt });
 
-  // Also keep a local setTimeout as backup (for when page is open)
+  // フォアグラウンド バックアップ（アプリが開いている場合のみ動く）
+  if (localTimers[t.id]) clearTimeout(localTimers[t.id]);
   if (ms > 0) {
     localTimers[t.id] = setTimeout(() => {
       if (firedSet.has(t.id)) return;
       firedSet.add(t.id);
       const cur = S.todos.find(x => x.id === t.id);
-      if (cur && !cur.done) {
+      if (!cur || cur.done) return;
+      // アプリが開いている場合はここで通知（SW が出せない場合の保険）
+      if (notifGranted() && swReg) {
+        swReg.showNotification('⏰ ' + cur.title, {
+          body: cur.desc || '期限が来ました',
+          icon: './icon-192.png',
+          badge: './icon-192.png',
+          tag: 'r-' + cur.id,
+          requireInteraction: true,
+          vibrate: [300, 150, 300],
+        }).catch(() => showToast('⏰ ' + cur.title));
+      } else {
         showToast('⏰ ' + cur.title + ' の期限が来ました');
-        showNativeNotif('⏰ 期限: ' + cur.title, cur.desc || '期限が来ました', t.id);
       }
       realtimeTick();
     }, ms);
@@ -1278,7 +1324,16 @@ function realtimeTick() {
     if (passed && !firedSet.has(t.id)) {
       firedSet.add(t.id);
       showToast('⏰ ' + t.title + ' の期限が来ました');
-      showNativeNotif('⏰ 期限: ' + t.title, t.desc || '期限が来ました', t.id);
+      if (notifGranted() && swReg) {
+        swReg.showNotification('⏰ 期限: ' + t.title, {
+          body: t.desc || '期限が来ました',
+          icon: './icon-192.png',
+          badge: './icon-192.png',
+          tag: 'r-' + t.id,
+          requireInteraction: true,
+          vibrate: [300, 150, 300],
+        }).catch(() => {});
+      }
     }
   });
   updateSubTabOverdueBadges();
@@ -1306,8 +1361,8 @@ async function grantNotif() {
   const ok = await ensureNotifPermission();
   if (ok) {
     showToast('通知を許可しました');
-    // Re-schedule all pending reminders via SW now that permission granted
-    S.todos.filter(t => !t.done && t.dt && new Date(t.dt) > new Date()).forEach(scheduleReminder);
+    await initPeriodicSync();
+    syncAllRemindersToSW();
     renderTodo(); // remove banner
   } else {
     showToast('通知が拒否されています。ブラウザ設定から許可してください。');
@@ -1643,6 +1698,20 @@ function showToast(msg) { const el = document.getElementById('toast'); el.textCo
 document.getElementById('sub-nav-todo').classList.add('visible');
 renderTodo();
 initSync();
+
+// SW 登録 → 完了後に全リマインダーを SW へ同期
+initSW().then(() => {
+  if (notifGranted()) {
+    initPeriodicSync();
+    syncAllRemindersToSW();
+  }
+});
+
+// 既存リマインダーのフォアグラウンドタイマーも張る（アプリが開いている間のバックアップ）
+S.todos.filter(t => !t.done && t.dt && new Date(t.dt) > new Date()).forEach(t => {
+  const ms = new Date(t.dt) - Date.now();
+  if (ms > 0) scheduleReminder(t);
+});
 </script>
 </body>
 </html>
